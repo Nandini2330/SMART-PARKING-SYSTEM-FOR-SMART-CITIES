@@ -1,0 +1,79 @@
+body{
+    background:#f4f7fb;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+.navbar{
+    box-shadow:0px 3px 8px rgba(0,0,0,.2);
+}
+
+.card{
+    border:none;
+    border-radius:12px;
+}
+
+.card:hover{
+    transform:translateY(-3px);
+    transition:.3s;
+}
+
+.table{
+    background:white;
+}
+
+.table th{
+    background:#212529;
+    color:white;
+}
+
+.btn{
+    border-radius:8px;
+}
+
+.badge{
+    padding:8px 14px;
+    font-size:14px;
+}
+
+.footer{
+    margin-top:50px;
+    text-align:center;
+    color:gray;
+}
+
+.slot-card{
+    border-radius:10px;
+    padding:20px;
+    color:white;
+    font-weight:bold;
+    text-align:center;
+}
+
+.available{
+    background:#28a745;
+}
+
+.occupied{
+    background:#dc3545;
+}
+
+.stat-card{
+    text-align:center;
+    padding:20px;
+    color:#1f2937; /* dark text for light cards */
+    border-radius:10px;
+}
+
+.stat-card.bg-success, .stat-card.bg-danger, .stat-card.bg-primary, .stat-card.bg-warning{
+    color: #fff; /* white text for colored cards */
+}
+
+.shadow{
+    box-shadow:0 5px 15px rgba(0,0,0,.1);
+}
+
+/* Chart sizing */
+.card canvas{
+    max-height: 360px;
+    width: 100% !important;
+}

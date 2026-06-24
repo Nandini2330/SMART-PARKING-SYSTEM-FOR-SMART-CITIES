@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+
+<div class="col-md-6">
+
+<div class="card shadow">
+
+<div class="card-header bg-primary text-white">
+
+Book Parking Slot
+
+</div>
+
+<div class="card-body">
+
+<form method="POST">
+
+<div class="mb-3">
+
+<label>
+
+Slot Number
+
+</label>
+
+<input
+
+type="text"
+
+class="form-control"
+
+value="{{slot.slot_number}}"
+
+readonly
+
+>
+
+</div>
+
+<div class="mb-3">
+
+<label>
+
+Vehicle Number
+
+</label>
+
+<input
+
+type="text"
+
+name="vehicle"
+
+class="form-control"
+
+placeholder="MH12AB1234"
+
+required
+
+>
+
+</div>
+
+<button class="btn btn-success">
+
+Confirm Booking
+
+</button>
+
+<a href="/" class="btn btn-secondary">
+
+Back
+
+</a>
+
+</form>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+{% endblock %}

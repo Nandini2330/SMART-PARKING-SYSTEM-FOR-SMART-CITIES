@@ -1,0 +1,22 @@
+# Virtual environment
+venv/
+.env
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+
+# SQLite DB (auto-created)
+parking.db
+parking.db.bak
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Node modules / build (if present)
+node_modules/
+dist/

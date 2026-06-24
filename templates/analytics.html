@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h3>Analytics</h3>
+
+<div class="row mt-3">
+    <div class="col-md-4">
+        <div class="card p-3 shadow-sm">
+            <h6>Total Slots</h6>
+            <h3>{{ total }}</h3>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 shadow-sm">
+            <h6>Available</h6>
+            <h3>{{ available }}</h3>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 shadow-sm">
+            <h6>Occupied</h6>
+            <h3>{{ occupied }}</h3>
+        </div>
+    </div>
+</div>
+
+<hr />
+
+<div class="row mt-3">
+    <div class="col-md-6">
+        <div class="card p-3 shadow-sm">
+            <h6>Available vs Occupied</h6>
+            <canvas id="doughnutChart"></canvas>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card p-3 shadow-sm">
+            <h6>Daily Entries / Exits (Last 7 days)</h6>
+            <canvas id="barChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const dough = document.getElementById('doughnutChart');
+new Chart(dough,{type:'doughnut',data:{labels:['Available','Occupied'],datasets:[{data:[{{ available }},{{ occupied }}],backgroundColor:['#28a745','#dc3545']} ]}});
+
+const bar = document.getElementById('barChart');
+new Chart(bar,{
+    type:'bar',
+    data:{labels:{{ labels|tojson }},datasets:[{label:'Entered',data:{{ entered|tojson }},backgroundColor:'#0d6efd'},{label:'Exited',data:{{ exited|tojson }},backgroundColor:'#6c757d'}]}
+});
+</script>
+
+{% endblock %}

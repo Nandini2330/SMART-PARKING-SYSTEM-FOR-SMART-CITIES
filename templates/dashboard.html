@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="row g-3">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h2 class="mb-0">Dashboard</h2>
+        <div>
+            <button class="btn btn-sm btn-outline-secondary me-2" id="btn-refresh">Refresh</button>
+            <a href="/history" class="btn btn-sm btn-outline-primary">History</a>
+            <a href="/analytics" class="btn btn-sm btn-outline-info">Analytics</a>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="card stat-card shadow-sm bg-white border">
+            <div class="card-body">
+                <h6>Total Slots</h6>
+                <h3 id="totalSlots">{{ total }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="card stat-card shadow-sm bg-success text-white">
+            <div class="card-body">
+                <h6>Available Slots</h6>
+                <h3 id="availableSlots">{{ available }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="card stat-card shadow-sm bg-danger text-white">
+            <div class="card-body">
+                <h6>Occupied Slots</h6>
+                <h3 id="occupiedSlots">{{ occupied }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="card stat-card shadow-sm bg-primary text-white">
+            <div class="card-body">
+                <h6>Occupancy %</h6>
+                <h3 id="occupancy">{{ occupancy }}%</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card p-3 shadow-sm">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">Parking Layout</h5>
+                <div class="d-flex gap-2">
+                    <input type="text" id="search" class="form-control form-control-sm" placeholder="Search vehicle, owner or slot" onkeyup="filterSlots()">
+                    <button class="btn btn-sm btn-outline-secondary" id="open-random">Simulate Sensors</button>
+                </div>
+            </div>
+
+            <div class="row" id="slotContainer">
+                {% for slot in slots %}
+                <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-3">
+                    <div class="card slot-card shadow-sm {{ 'available' if slot.status=='Available' else 'occupied' }}" data-slot-id="{{ slot.id }}" data-slot-number="{{ slot.slot_number }}" data-vehicle="{{ slot.vehicle_number }}" data-owner="{{ slot.owner_name }}">
+                        <div class="card-body text-center p-3">
+                            <div class="fs-3">{% if slot.status=='Available' %}🚗{% else %}🚙{% endif %}</div>
+                            <h5 class="mt-2">{{ slot.slot_number }}</h5>
+                            <div class="mb-2">
+                                {% if slot.status=='Available' %}
+                                    <span class="badge bg-light text-success">AVAILABLE</span>
+                                {% else %}
+                                    <span class="badge bg-light text-danger">OCCUPIED</span>
+                                {% endif %}
+                            </div>
+                            <div class="small mb-2">{{ slot.vehicle_number or '--------' }}</div>
+                            <div class="small mb-3">{{ slot.booking_time or '' }}</div>
+                            <div>
+                                {% if slot.status=='Available' %}
+                                    <button class="btn btn-sm btn-success w-100 btn-book" data-id="{{ slot.id }}">Book</button>
+                                {% else %}
+                                    <button class="btn btn-sm btn-danger w-100 btn-cancel" data-id="{{ slot.id }}">Cancel</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 mt-3">
+        <div class="card p-3 shadow-sm">
+            <h5 class="mb-3">Parking Statistics</h5>
+            <canvas id="parkingChart"></canvas>
+        </div>
+    </div>
+
+    {% include 'booking_modal.html' %}
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const chartCtx = document.getElementById('parkingChart');
+let parkingChart = new Chart(chartCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Available','Occupied'],
+        datasets: [{ data: {{ [available, occupied]|tojson }}, backgroundColor: ['#28a745','#dc3545'] }]
+    }
+    ,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'top' }
+        }
+    }
+});
+
+document.getElementById('btn-refresh').addEventListener('click', e=> refreshSlots());
+document.getElementById('open-random').addEventListener('click', e=> {
+    fetch('/random').then(()=> refreshSlots());
+});
+
+// base.html buttons
+const baseRandom = document.getElementById('btn-random');
+if(baseRandom) baseRandom.addEventListener('click', ()=> { fetch('/random').then(()=> refreshSlots()); });
+const baseReset = document.getElementById('btn-reset');
+if(baseReset) baseReset.addEventListener('click', ()=> { if(confirm('Reset all slots to Available?')) fetch('/reset').then(()=> refreshSlots()); });
+
+function refreshSlots(){
+    fetch('/api/slots').then(r=>r.json()).then(data=>{
+        document.getElementById('totalSlots').innerText = data.length;
+        const available = data.filter(s=>s.status==='Available').length;
+        const occupied = data.filter(s=>s.status==='Occupied').length;
+        document.getElementById('availableSlots').innerText = available;
+        document.getElementById('occupiedSlots').innerText = occupied;
+        const occupancy = Math.round((occupied/data.length)*100*100)/100;
+        document.getElementById('occupancy').innerText = occupancy + '%';
+
+        // update chart
+        parkingChart.data.datasets[0].data = [available, occupied];
+        parkingChart.update();
+
+        // update slot cards
+        const container = document.getElementById('slotContainer');
+        container.innerHTML = '';
+        data.forEach(slot=>{
+            const col = document.createElement('div');
+            col.className = 'col-6 col-sm-4 col-md-3 col-lg-2 mb-3';
+            col.innerHTML = `
+                <div class="card slot-card shadow-sm ${slot.status==='Available' ? 'available' : 'occupied'}" data-slot-id="${slot.id}" data-slot-number="${slot.slot_number}" data-vehicle="${slot.vehicle_number}" data-owner="${slot.owner_name}">
+                    <div class="card-body text-center p-3">
+                        <div class="fs-3">${slot.status==='Available' ? '🚗' : '🚙'}</div>
+                        <h5 class="mt-2">${slot.slot_number}</h5>
+                        <div class="mb-2">
+                            <span class="badge bg-light ${slot.status==='Available' ? 'text-success' : 'text-danger'}">${slot.status.toUpperCase()}</span>
+                        </div>
+                        <div class="small mb-2">${slot.vehicle_number || '--------'}</div>
+                        <div class="small mb-3">${slot.booking_time || ''}</div>
+                        <div>
+                            ${slot.status==='Available' ? `<button class="btn btn-sm btn-success w-100 btn-book" data-id="${slot.id}">Book</button>` : `<button class="btn btn-sm btn-danger w-100 btn-cancel" data-id="${slot.id}">Cancel</button>`}
+                        </div>
+                    </div>
+                </div>`;
+            container.appendChild(col);
+        });
+
+    // use event delegation instead of per-button handlers
+    attachSlotActions();
+    });
+}
+
+function attachSlotActions(){
+    document.querySelectorAll('.btn-book').forEach(b=> b.addEventListener('click', e=>{
+        const id = e.currentTarget.getAttribute('data-id');
+        // open modal
+        const modal = new bootstrap.Modal(document.getElementById('bookingModal'));
+        document.getElementById('bookSlotId').value = id;
+        modal.show();
+    }));
+
+    document.querySelectorAll('.btn-cancel').forEach(b=> b.addEventListener('click', e=>{
+        const id = e.currentTarget.getAttribute('data-id');
+        if(!confirm('Confirm cancel booking and free this slot?')) return;
+        fetch('/api/cancel', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({slot_id: id})}).then(r=>r.json()).then(()=> refreshSlots());
+    }));
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+    attachSlotActions();
+    // event delegation fallback
+    document.getElementById('slotContainer').addEventListener('click', function(e){
+        const bookBtn = e.target.closest('.btn-book');
+        const cancelBtn = e.target.closest('.btn-cancel');
+        if(bookBtn){
+            const id = bookBtn.getAttribute('data-id');
+            const modal = new bootstrap.Modal(document.getElementById('bookingModal'));
+            document.getElementById('bookSlotId').value = id;
+            modal.show();
+        } else if(cancelBtn){
+            const id = cancelBtn.getAttribute('data-id');
+            if(!confirm('Confirm checkout and free this slot?')) return;
+            // Manual checkout endpoint will clear slot and update history
+            fetch('/api/cancel', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({slot_id: id})}).then(r=>r.json()).then(()=> refreshSlots());
+            }
+        });
+
+    function showToast(msg, type='success'){
+        const el = document.createElement('div');
+        el.className = `alert alert-${type} position-fixed top-0 end-0 m-3`;
+        el.style.zIndex = 9999;
+        el.innerText = msg;
+        document.body.appendChild(el);
+        setTimeout(()=> el.remove(), 2500);
+        }
+    document.getElementById('bookingForm').addEventListener('submit', function(e){
+        e.preventDefault();
+        const slot_id = document.getElementById('bookSlotId').value;
+        const vehicle_number = document.getElementById('vehicleNumber').value.trim();
+        const owner_name = document.getElementById('ownerName').value.trim();
+        const phone_number = document.getElementById('phoneNumber').value.trim();
+        console.log('Booking submit', {slot_id, vehicle_number, owner_name, phone_number});
+        fetch('/api/book', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({slot_id, vehicle_number, owner_name, phone_number})})
+            .then(r=> r.json().catch(()=>({success:false, message:'Invalid JSON response'})))
+            .then(res=>{
+                console.log('Booking response', res);
+                if(res.success){
+                    // move focus to a safe control before hiding the modal to avoid aria-hidden focus issues
+                    try{
+                        const safe = document.getElementById('btn-refresh') || document.getElementById('btn-random') || document.body;
+                        if(safe && typeof safe.focus === 'function') safe.focus();
+                    }catch(e){/* ignore */}
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('bookingModal'));
+                    if(modal) modal.hide();
+                    document.getElementById('bookingForm').reset();
+                    showToast('Slot booked successfully', 'success');
+                    // small delay to ensure server commit reflected
+                    setTimeout(()=> refreshSlots(), 250);
+                } else {
+                    showToast(res.message || 'Booking failed', 'danger');
+                    console.error('Booking failed:', res);
+                }
+            }).catch(err=>{
+                console.error('Booking request failed', err);
+                showToast('Booking request failed', 'danger');
+            });
+    });
+});
+
+function filterSlots(){
+    const q = document.getElementById('search').value.toLowerCase();
+    document.querySelectorAll('#slotContainer .card').forEach(card=>{
+        const slot = card.getAttribute('data-slot-number') || '';
+        const vehicle = card.getAttribute('data-vehicle') || '';
+        const owner = card.getAttribute('data-owner') || '';
+        const text = `${slot} ${vehicle} ${owner}`.toLowerCase();
+        card.parentElement.style.display = text.indexOf(q) > -1 ? '' : 'none';
+    });
+}
+</script>
+
+{% endblock %}
