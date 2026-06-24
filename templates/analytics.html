@@ -44,14 +44,47 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-const dough = document.getElementById('doughnutChart');
-new Chart(dough,{type:'doughnut',data:{labels:['Available','Occupied'],datasets:[{data:[{{ available }},{{ occupied }}],backgroundColor:['#28a745','#dc3545']} ]}});
+(function() {
+    // expose template data into JS variables to avoid inline {{ ... }} inside object literals
+    const availableVal = {{ available|tojson }};
+    const occupiedVal = {{ occupied|tojson }};
 
-const bar = document.getElementById('barChart');
-new Chart(bar,{
-    type:'bar',
-    data:{labels:{{ labels|tojson }},datasets:[{label:'Entered',data:{{ entered|tojson }},backgroundColor:'#0d6efd'},{label:'Exited',data:{{ exited|tojson }},backgroundColor:'#6c757d'}]}
-});
+    const chartLabels = {{ labels|tojson }};
+    const enteredData = {{ entered|tojson }};
+    const exitedData = {{ exited|tojson }};
+
+    const dough = document.getElementById('doughnutChart');
+    new Chart(dough, {
+        type: 'doughnut',
+        data: {
+            labels: ['Available', 'Occupied'],
+            datasets: [{
+                data: [availableVal, occupiedVal],
+                backgroundColor: ['#28a745', '#dc3545']
+            }]
+        }
+    });
+
+    const bar = document.getElementById('barChart');
+    new Chart(bar, {
+        type: 'bar',
+        data: {
+            labels: chartLabels,
+            datasets: [
+                {
+                    label: 'Entered',
+                    data: enteredData,
+                    backgroundColor: '#0d6efd'
+                },
+                {
+                    label: 'Exited',
+                    data: exitedData,
+                    backgroundColor: '#6c757d'
+                }
+            ]
+        }
+    });
+})();
 </script>
 
 {% endblock %}

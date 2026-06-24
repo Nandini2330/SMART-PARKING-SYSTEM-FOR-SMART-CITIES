@@ -101,15 +101,17 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<div id="parkingData" data-values='{{ [available, occupied]|tojson }}' style="display:none"></div>
 <script>
 const chartCtx = document.getElementById('parkingChart');
+// render initial data from server safely as JSON and assign to a JS variable
+const initialParkingData = JSON.parse(document.getElementById('parkingData').dataset.values || '[]');
 let parkingChart = new Chart(chartCtx, {
     type: 'doughnut',
     data: {
         labels: ['Available','Occupied'],
-        datasets: [{ data: {{ [available, occupied]|tojson }}, backgroundColor: ['#28a745','#dc3545'] }]
-    }
-    ,
+        datasets: [{ data: initialParkingData, backgroundColor: ['#28a745','#dc3545'] }]
+    },
     options: {
         responsive: true,
         maintainAspectRatio: false,

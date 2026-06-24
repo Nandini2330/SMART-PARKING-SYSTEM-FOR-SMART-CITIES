@@ -1,1 +1,0 @@
-Presentation outline placeholder.
